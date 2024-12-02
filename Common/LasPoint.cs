@@ -8,7 +8,7 @@ namespace LazToLasEasy.Common
 {
     public struct LasPoint
     {
-        public int X, Y, Z; // Scaled values
+        public double X, Y, Z; // Scaled values
         public ushort Intensity;
         public byte ReturnNumber;
         public byte NumberOfReturns;
