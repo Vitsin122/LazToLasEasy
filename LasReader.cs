@@ -62,9 +62,9 @@ namespace LazToLasEasy
             {
                 var point = new LasPoint
                 {
-                    X = reader.ReadInt32(),
-                    Y = reader.ReadInt32(),
-                    Z = reader.ReadInt32(),
+                    X = reader.ReadDouble(),
+                    Y = reader.ReadDouble(),
+                    Z = reader.ReadDouble(),
                     Intensity = reader.ReadUInt16(),
                     ReturnNumber = (byte)(reader.ReadByte() & 0b00000111),
                     NumberOfReturns = (byte)((reader.ReadByte() >> 3) & 0b00000111),
