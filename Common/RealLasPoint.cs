@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace LazToLasEasy.Common
 {
-    public class LasPoint
+    public class RealLasPoint
     {
-        public int X, Y, Z;               // Raw unscaled values
+        public double X, Y, Z;               // Raw unscaled values
         public ushort Intensity;
         public byte ReturnNumber;
         public byte NumberOfReturns;

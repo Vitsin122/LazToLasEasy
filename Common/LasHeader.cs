@@ -6,30 +6,30 @@ using System.Threading.Tasks;
 
 namespace LazToLasEasy.Common
 {
-    public struct LasHeader
+    public class LasHeader
     {
-        public string FileSignature;  // "LASF"
+        public string FileSignature;
         public ushort FileSourceId;
         public ushort GlobalEncoding;
-        public uint ProjectID1;
-        public ushort ProjectID2;
-        public ushort ProjectID3;
-        public byte[] ProjectID4; // [8]
+        public uint ProjectIdGuid1;
+        public ushort ProjectIdGuid2;
+        public ushort ProjectIdGuid3;
+        public byte[] ProjectIdGuid4;
         public byte VersionMajor;
         public byte VersionMinor;
-        public string SystemIdentifier; // [32]
-        public string GeneratingSoftware; // [32]
-        public ushort FileCreationDayOfYear;
+        public string SystemIdentifier;
+        public string GeneratingSoftware;
+        public ushort FileCreationDay;
         public ushort FileCreationYear;
         public ushort HeaderSize;
         public uint OffsetToPointData;
-        public uint NumberOfVariableLengthRecords;
-        public byte PointDataFormatId;
+        public uint NumVariableLengthRecords;
+        public byte PointDataFormat;
         public ushort PointDataRecordLength;
-        public uint NumberOfPointRecords;
-        public uint[] NumberOfPointsByReturn; // [5]
-        public double ScaleFactorX, ScaleFactorY, ScaleFactorZ;
-        public double OffsetX, OffsetY, OffsetZ;
-        public double MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
+        public uint NumPointRecords;
+        public uint[] NumPointsByReturn;
+        public double XScale, YScale, ZScale;
+        public double XOffset, YOffset, ZOffset;
+        public double MaxX, MinX, MaxY, MinY, MaxZ, MinZ;
     }
 }

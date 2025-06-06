@@ -7,86 +7,127 @@ using LazToLasEasy.Common;
 
 namespace LazToLasEasy
 {
-    public class LasReader
+    public class LasReader : IDisposable
     {
-        public static (LasHeader, List<LasPoint>) ReadLasFile(string filePath)
-        {
-            using var reader = new BinaryReader(File.Open(filePath, FileMode.Open));
+        private BinaryReader _reader;
+        private LasHeader _header;
 
-            // Читаем заголовок
-            var header = new LasHeader
+        public LasHeader Header => _header;
+
+        public LasReader(string filePath)
+        {
+            _reader = new BinaryReader(File.OpenRead(filePath));
+            ReadHeader();
+        }
+
+        private void ReadHeader()
+        {
+            _header = new LasHeader
             {
-                FileSignature = new string(reader.ReadChars(4)),
-                FileSourceId = reader.ReadUInt16(),
-                GlobalEncoding = reader.ReadUInt16(),
-                ProjectID1 = reader.ReadUInt32(),
-                ProjectID2 = reader.ReadUInt16(),
-                ProjectID3 = reader.ReadUInt16(),
-                ProjectID4 = reader.ReadBytes(8),
-                VersionMajor = reader.ReadByte(),
-                VersionMinor = reader.ReadByte(),
-                SystemIdentifier = new string(reader.ReadChars(32)).TrimEnd('\0'),
-                GeneratingSoftware = new string(reader.ReadChars(32)).TrimEnd('\0'),
-                FileCreationDayOfYear = reader.ReadUInt16(),
-                FileCreationYear = reader.ReadUInt16(),
-                HeaderSize = reader.ReadUInt16(),
-                OffsetToPointData = reader.ReadUInt32(),
-                NumberOfVariableLengthRecords = reader.ReadUInt32(),
-                PointDataFormatId = reader.ReadByte(),
-                PointDataRecordLength = reader.ReadUInt16(),
-                NumberOfPointRecords = reader.ReadUInt32(),
-                NumberOfPointsByReturn = new uint[5]
+                FileSignature = new string(_reader.ReadChars(4)),
+                FileSourceId = _reader.ReadUInt16(),
+                GlobalEncoding = _reader.ReadUInt16(),
+                ProjectIdGuid1 = _reader.ReadUInt32(),
+                ProjectIdGuid2 = _reader.ReadUInt16(),
+                ProjectIdGuid3 = _reader.ReadUInt16(),
+                ProjectIdGuid4 = _reader.ReadBytes(8),
+                VersionMajor = _reader.ReadByte(),
+                VersionMinor = _reader.ReadByte(),
+                SystemIdentifier = new string(_reader.ReadChars(32)).Trim('\0'),
+                GeneratingSoftware = new string(_reader.ReadChars(32)).Trim('\0'),
+                FileCreationDay = _reader.ReadUInt16(),
+                FileCreationYear = _reader.ReadUInt16(),
+                HeaderSize = _reader.ReadUInt16(),
+                OffsetToPointData = _reader.ReadUInt32(),
+                NumVariableLengthRecords = _reader.ReadUInt32(),
+                PointDataFormat = _reader.ReadByte(),
+                PointDataRecordLength = _reader.ReadUInt16(),
+                NumPointRecords = _reader.ReadUInt32(),
+                NumPointsByReturn = new uint[5]
+                {
+                _reader.ReadUInt32(),
+                _reader.ReadUInt32(),
+                _reader.ReadUInt32(),
+                _reader.ReadUInt32(),
+                _reader.ReadUInt32()
+                },
+                XScale = _reader.ReadDouble(),
+                YScale = _reader.ReadDouble(),
+                ZScale = _reader.ReadDouble(),
+                XOffset = _reader.ReadDouble(),
+                YOffset = _reader.ReadDouble(),
+                ZOffset = _reader.ReadDouble(),
+                MaxX = _reader.ReadDouble(),
+                MinX = _reader.ReadDouble(),
+                MaxY = _reader.ReadDouble(),
+                MinY = _reader.ReadDouble(),
+                MaxZ = _reader.ReadDouble(),
+                MinZ = _reader.ReadDouble()
             };
 
-            for (int i = 0; i < 5; i++)
-                header.NumberOfPointsByReturn[i] = reader.ReadUInt32();
+            // Skip any remaining header bytes
+            _reader.BaseStream.Position = _header.OffsetToPointData;
+        }
 
-            header.ScaleFactorX = reader.ReadDouble();
-            header.ScaleFactorY = reader.ReadDouble();
-            header.ScaleFactorZ = reader.ReadDouble();
-            header.OffsetX = reader.ReadDouble();
-            header.OffsetY = reader.ReadDouble();
-            header.OffsetZ = reader.ReadDouble();
-            header.MinX = reader.ReadDouble();
-            header.MaxX = reader.ReadDouble();
-            header.MinY = reader.ReadDouble();
-            header.MaxY = reader.ReadDouble();
-            header.MinZ = reader.ReadDouble();
-            header.MaxZ = reader.ReadDouble();
+        public IEnumerable<LasPoint> ReadPoints()
+        {
+            int pointSize = _header.PointDataRecordLength;
+            byte[] pointBuffer = new byte[pointSize];
 
-            // Переходим к данным точек
-            reader.BaseStream.Seek(header.OffsetToPointData, SeekOrigin.Begin);
-            var points = new List<LasPoint>();
-
-            for (int i = 0; i < header.NumberOfPointRecords; i++)
+            for (int i = 0; i < _header.NumPointRecords; i++)
             {
-                var point = new LasPoint
-                {
-                    X = reader.ReadInt32(),
-                    Y = reader.ReadInt32(),
-                    Z = reader.ReadInt32(),
-                    Intensity = reader.ReadUInt16(),
-                    ReturnNumber = (byte)(reader.ReadByte() & 0b00000111),
-                    NumberOfReturns = (byte)((reader.ReadByte() >> 3) & 0b00000111),
-                    ScanDirectionFlag = (byte)((reader.ReadByte() >> 6) & 0b00000001),
-                    EdgeOfFlightLine = (byte)((reader.ReadByte() >> 7) & 0b00000001),
-                    Classification = reader.ReadByte(),
-                    ScanAngleRank = reader.ReadSByte(),
-                    UserData = reader.ReadByte(),
-                    PointSourceId = reader.ReadUInt16()
-                };
+                _reader.Read(pointBuffer, 0, pointSize);
+                yield return ParsePoint(pointBuffer);
+            }
+        }
 
-                if (header.PointDataFormatId == 2 || header.PointDataFormatId == 3)
-                {
-                    point.Red = reader.ReadUInt16();
-                    point.Green = reader.ReadUInt16();
-                    point.Blue = reader.ReadUInt16();
-                }
+        private LasPoint ParsePoint(byte[] buffer)
+        {
+            var point = new LasPoint();
+            int offset = 0;
 
-                points.Add(point);
+            // Common fields for all point formats
+            point.X = BitConverter.ToInt32(buffer, offset); offset += 4;
+            point.Y = BitConverter.ToInt32(buffer, offset); offset += 4;
+            point.Z = BitConverter.ToInt32(buffer, offset); offset += 4;
+            point.Intensity = BitConverter.ToUInt16(buffer, offset); offset += 2;
+            point.ReturnNumber = (byte)(buffer[offset] & 0x07); // Bits 0-2
+            point.NumberOfReturns = (byte)((buffer[offset] >> 3) & 0x07); // Bits 3-5
+            offset++;
+            point.Classification = buffer[offset]; offset++;
+            point.ScanAngleRank = buffer[offset]; offset++;
+            point.UserData = buffer[offset]; offset++;
+            point.PointSourceId = BitConverter.ToUInt16(buffer, offset); offset += 2;
+
+            // Format-specific fields
+            if (_header.PointDataFormat >= 1)
+            {
+                point.GPSTime = BitConverter.ToDouble(buffer, offset); offset += 8;
             }
 
-            return (header, points);
+            if (_header.PointDataFormat >= 2)
+            {
+                point.Red = BitConverter.ToUInt16(buffer, offset); offset += 2;
+                point.Green = BitConverter.ToUInt16(buffer, offset); offset += 2;
+                point.Blue = BitConverter.ToUInt16(buffer, offset); offset += 2;
+            }
+
+            return point;
+        }
+
+        public void Dispose()
+        {
+            _reader?.Dispose();
+        }
+
+        // Helper method to convert raw coordinates to real values
+        public (double x, double y, double z) GetScaledCoordinates(LasPoint point)
+        {
+            return (
+                point.X * _header.XScale + _header.XOffset,
+                point.Y * _header.YScale + _header.YOffset,
+                point.Z * _header.ZScale + _header.ZOffset
+            );
         }
     }
 }
