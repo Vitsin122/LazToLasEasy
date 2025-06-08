@@ -19,37 +19,37 @@ namespace LazToLasEasy
         {
             List<RealLasPoint> points = new List<RealLasPoint>();
 
-            foreach (var positions in LASZip.Parser.ReadPoints(filePath, 1024 * 1024))
+            foreach (var positions in LASZip.Parser.ReadPoints("C:\\Users\\Vitsin\\source\\repos\\Las_Converter_Console\\forest_2017_a.laz", 1024 * 1024))
             {
                 for (int i = 0; i < positions.Positions.Count(); i++)
                 {
-                    var pointCoordData = positions.Positions[i];
-                    var pointClassificateData = positions.Classifications[i];
-                    var pointIntensivityData = positions.Intensities[i];
-                    var pointColorsData = positions.Colors[i];
-                    var pointReturnNumberData = positions.ReturnNumbers[i];
-                    var pointNumberOfReturnData = positions.NumberOfReturnsOfPulses[i];
-                    var pointScanAngleRanksData = positions.ScanAngleRanks[i];
-                    var pointGpsData = positions.GpsTimes[i];
-                    var pointUserData = positions.UserDatas[i];
-                    var pointSourceIdData = positions.PointSourceIds[i];
+                    var pointCoordData = positions?.Positions?[i];
+                    var pointClassificateData = positions?.Classifications?[i];
+                    var pointIntensivityData = positions?.Intensities?[i];
+                    var pointColorsData = positions?.Colors?[i];
+                    var pointReturnNumberData = positions?.ReturnNumbers?[i];
+                    var pointNumberOfReturnData = positions?.NumberOfReturnsOfPulses?[i];
+                    var pointScanAngleRanksData = positions?.ScanAngleRanks?[i];
+                    var pointGpsData = positions?.GpsTimes?[i];
+                    var pointUserData = positions?.UserDatas?[i];
+                    var pointSourceIdData = positions?.PointSourceIds?[i];
 
                     points.Add(new RealLasPoint
                     {
-                        X = pointCoordData.X,
-                        Y = pointCoordData.Y,
-                        Z = pointCoordData.Z,
-                        Classification = pointClassificateData,
-                        Red = pointColorsData.R,
-                        Blue = pointColorsData.B,
-                        Green = pointColorsData.G,
-                        Intensity = pointIntensivityData,
-                        ReturnNumber = pointReturnNumberData,
-                        NumberOfReturns = pointNumberOfReturnData,
-                        ScanAngleRank = (byte)pointScanAngleRanksData,
-                        GPSTime = pointGpsData,
-                        UserData = pointUserData,
-                        PointSourceId = pointSourceIdData,
+                        X = pointCoordData?.X ?? 0,
+                        Y = pointCoordData?.Y ?? 0,
+                        Z = pointCoordData?.Z ?? 0,
+                        Classification = pointClassificateData ?? 0,
+                        Red = pointColorsData?.R ?? 0,
+                        Blue = pointColorsData?.B ?? 0,
+                        Green = pointColorsData?.G ?? 0,
+                        Intensity = pointIntensivityData ?? 0,
+                        ReturnNumber = pointReturnNumberData ?? 0,
+                        NumberOfReturns = pointNumberOfReturnData ?? 0,
+                        ScanAngleRank = pointScanAngleRanksData ?? 0,
+                        GPSTime = pointGpsData ?? 0,
+                        UserData = pointUserData ?? 0,
+                        PointSourceId = pointSourceIdData ?? 0,
                     });
                 }
             }
